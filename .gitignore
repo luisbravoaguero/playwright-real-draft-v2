@@ -1,0 +1,94 @@
+############################################
+# IntelliJ IDEA
+############################################
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+############################################
+# Java / Maven
+############################################
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Maven wrapper (keep wrapper, ignore its runtime artifacts if any)
+.mvn/wrapper/maven-wrapper.jar
+
+############################################
+# Playwright (Java) - local browsers/cache/artifacts
+############################################
+# Playwright may store downloaded browsers or cache locally
+.playwright/
+playwright-browsers/
+ms-playwright/
+**/ms-playwright/
+
+# Test artifacts often produced by Playwright tests
+test-results/
+playwright-report/
+blob-report/
+trace.zip
+traces/
+screenshots/
+videos/
+downloads/
+
+############################################
+# Cucumber / TestNG / Reports
+############################################
+# Common report outputs (adjust if you keep reports in repo)
+reports/
+report/
+allure-results/
+allure-report/
+cucumber-reports/
+cucumber-report/
+surefire-reports/
+failsafe-reports/
+
+# ExtentReports output folders (common names)
+extent-reports/
+ExtentReports/
+test-output/
+TestOutput/
+
+############################################
+# Logs
+############################################
+logs/
+*.log
+
+############################################
+# OS / Misc
+############################################
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+############################################
+# Environment / Secrets
+############################################
+.env
+.env.*
+*.local
+*.secret
+secrets/
+credentials/
+*.keystore
+*.p12
+
+############################################
+# Optional: Local config overrides (keep your real config in repo)
+############################################
+config/local/
+src/test/resources/config/local/
+application-local.properties
+application-local.yml
+application-local.yaml

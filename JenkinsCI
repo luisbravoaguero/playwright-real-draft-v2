@@ -1,0 +1,352 @@
+#!groovy
+import groovy.json.JsonSlurperClassic
+import groovy.json.JsonOutput
+
+//@Library(['global-pipeline-library', 'security_library','pe-common-pipeline-config'])
+@Library(['global-pipeline-library','pe-common-pipeline-config'])
+
+// ---------------- CPS-safe helpers ----------------
+@NonCPS
+def parseJsonText(String jsonText) {
+  return new JsonSlurperClassic().parseText(jsonText)
+}
+
+@NonCPS
+def toFeatureLineItems(def parsed) {
+  def items = []
+  parsed.each { featureObj ->
+    String uri = (featureObj.uri ?: featureObj.get('uri')) as String
+    if (uri?.startsWith('file:')) uri = uri.substring(5)
+
+    (featureObj.elements ?: []).each { scenarioObj ->
+      def line = scenarioObj?.line
+      if (uri && line) items << "${uri}:${line}".toString()
+    }
+  }
+  return items
+}
+
+@NonCPS
+def chunkByTwo(List<String> items) {
+  def chunks = []
+  for (int i = 0; i < items.size(); i += 2) {
+    def chunk = []
+    chunk << items[i]
+    if (i + 1 < items.size()) chunk << items[i + 1]
+    chunks << chunk
+  }
+  return chunks
+}
+
+def slugify(String s) {
+  return s?.toLowerCase()
+          .replaceAll('[^a-z0-9.-]+','-')
+          .replaceAll('^-+','')
+          .replaceAll('-+$','')
+          .take(60)
+}
+// --------------------------------------------------
+
+// ✅ GLOBAL VARIABLES
+def ramaParam
+def tagsParam
+def runnerParam
+def threadsParam
+
+pipeline {
+  agent {
+    kubernetes {
+      yaml getYmlBuildPod('playwright')
+    }
+  }
+
+  parameters {
+    string(name: 'RAMA', defaultValue: 'develop', description: 'Rama a usar')
+    string(name: 'TAGS', defaultValue: '@emisionsctr', description: 'Filtro Cucumber (ej: @a or @b and not @wip)')
+    string(name: 'CLASE_RUNNER', defaultValue: 'RunnerCucumberTest', description: 'Runner Cucumber+TestNG')
+    string(name: 'HILOS_DE_EJECUCION', defaultValue: '2', description: 'Threads DataProvider por pod (2 = 2 escenarios simultáneos)')
+  }
+
+  options {
+    timeout(time: 90, unit: 'MINUTES')
+    timestamps()
+    ansiColor('xterm')
+    buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '30', artifactNumToKeepStr: '30'))
+  }
+
+  environment {
+    GIT_URL   = 'https://bitbucket.org/map-pe-devops/oim_automatizacion.git'
+    GIT_CREDS = 'bitbucket-cloud-api-token-git-peru'
+
+    EXTENT_ARCHIVES_DIR = 'target/extent-archives'
+    EXTENT_MERGED_DIR   = 'target/extent-merged'
+  }
+
+  stages {
+
+    // ✅ INIT VARIABLES ONCE
+    stage('Init Params') {
+      steps {
+        script {
+          ramaParam    = params.RAMA
+          tagsParam    = params.TAGS
+          runnerParam  = params.CLASE_RUNNER
+          threadsParam = params.HILOS_DE_EJECUCION
+        }
+      }
+    }
+
+    stage('Prepare Environment') {
+      steps {
+        echo "PARAMS => RAMA=${ramaParam} | TAGS=${tagsParam} | RUNNER=${runnerParam} | THREADS=${threadsParam}"
+      }
+    }
+
+    stage('Discover Scenarios') {
+      steps {
+        container('playwright') {
+          dir('discovery') {
+
+            script {
+              env.TARGET_BRANCH = ramaParam?.trim()
+
+              def exists = sh(
+                      returnStatus: true,
+                      script: "git ls-remote --heads ${env.GIT_URL} ${env.TARGET_BRANCH} >/dev/null 2>&1"
+              )
+              if (exists != 0) {
+                echo "⚠️  Rama '${env.TARGET_BRANCH}' no existe o no es accesible. Usaré 'master'."
+                env.TARGET_BRANCH = 'master'
+              }
+              echo "✔️  Rama efectiva: ${env.TARGET_BRANCH}"
+            }
+
+            checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${env.TARGET_BRANCH}"]],
+                    userRemoteConfigs: [[url: env.GIT_URL, credentialsId: env.GIT_CREDS]],
+                    extensions: [[$class: 'CleanCheckout']]
+            ])
+
+            sh """
+              mvn -B -q test \
+                -Dtest=${runnerParam} \
+                -Dcucumber.filter.tags="${tagsParam}" \
+                -Dcucumber.execution.dry-run=true \
+                -Dcucumber.plugin="json:target/cucumber-discovery.json" \
+                -DfailIfNoTests=false || true
+            """
+
+            sh '''
+              set +e
+              [ -d target ] && chmod -R a+rwX target 2>/dev/null || true
+              exit 0
+            '''
+
+            script {
+              def parsed = parseJsonText(readFile('target/cucumber-discovery.json'))
+              if (!(parsed instanceof List) || parsed.isEmpty()) {
+                error "No se encontraron escenarios para TAGS='${tagsParam}'."
+              }
+
+              def items = toFeatureLineItems(parsed)
+              if (!items) error "Discovery no produjo items feature:line."
+
+              def chunks = chunkByTwo(items)
+
+              echo "Escenarios: ${items.size()}"
+              echo "Pods a crear (2 escenarios por pod): ${chunks.size()}"
+              currentBuild.description = "RAMA=${env.TARGET_BRANCH} | TAGS=${tagsParam} | escenarios=${items.size()} | pods=${chunks.size()}"
+
+              writeFile file: 'chunks.json', text: JsonOutput.toJson(chunks)
+              stash name: 'chunks', includes: 'chunks.json'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Prepare Pods Creation') {
+      steps {
+        script {
+          unstash 'chunks'
+          def chunks = parseJsonText(readFile('chunks.json'))
+
+          def branches = [:]
+
+          for (int i = 0; i < chunks.size(); i++) {
+            def idx = i + 1
+            def chunk = chunks[i]
+            def branchName = "pod-${idx}"
+
+            branches[branchName] = {
+              stage(branchName) {
+                def podLabel = "pw-${slugify(branchName)}-${env.BUILD_NUMBER}"
+
+                podTemplate(label: podLabel, yaml: getYmlBuildPod('playwright')) {
+                  node(podLabel) {
+                    container('playwright') {
+                      dir(branchName) {
+                        deleteDir()
+
+                        checkout([
+                                $class: 'GitSCM',
+                                branches: [[name: "*/${env.TARGET_BRANCH ?: ramaParam}"]],
+                                userRemoteConfigs: [[url: env.GIT_URL, credentialsId: env.GIT_CREDS]],
+                                extensions: [[$class: 'CleanCheckout']]
+                        ])
+
+                        def featuresArg = chunk.join(',')
+                        echo "Ejecutando ${branchName}: ${featuresArg}"
+
+                        def extentOutDir = "${env.EXTENT_ARCHIVES_DIR}/${branchName}"
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                          sh """
+                            mvn -B -q test \
+                              -Dtest=${runnerParam} \
+                              -Dcucumber.filter.tags="${tagsParam}" \
+                              -Dcucumber.features="${featuresArg}" \
+                              -Ddp.threads=${threadsParam} \
+                              -Dextent.out.dir="${extentOutDir}" \
+                              -Dextent.spark.enabled=false \
+                              -DfailIfNoTests=false
+                          """
+                        }
+
+                        sh '''
+                          set +e
+                          for d in target/cucumber-reports target/surefire-reports target/extent-reports target/extent-archives; do
+                            [ -d "$d" ] || continue
+                            chmod -R a+rwX "$d" 2>/dev/null || true
+                          done
+                          exit 0
+                        '''
+
+                        // ==========================================================
+                        //  SANEADO JUNIT (quita sufijos tipo: " - #1" / " - #1.1")
+                        //  Objetivo: normalizar nombres para consumers (p.ej. Octane)
+                        // ==========================================================
+                        sh '''
+                          set +e
+                          for d in target/cucumber-reports target/surefire-reports; do
+                            [ -d "$d" ] || continue
+                            if ls "$d"/*.xml >/dev/null 2>&1; then
+                              chmod 666 "$d"/*.xml 2>/dev/null || true
+                            fi
+                          done
+                          exit 0
+                        '''
+
+                        script {
+                          def globs = ['target/cucumber-reports/*.xml', 'target/surefire-reports/*.xml']
+                          def regex = java.util.regex.Pattern.compile('(<testcase[^>]*name="[^"]*?)\\s*-\\s*#\\d+(?:\\.\\d+)?\"')
+
+                          int totalChanged = 0
+                          globs.each { glob ->
+                            def files = findFiles(glob: glob)
+                            files.each { f ->
+                              try {
+                                def txt = readFile(f.path)
+                                def newTxt = regex.matcher(txt).replaceAll('$1"')
+                                if (newTxt != txt) {
+                                  writeFile file: f.path, text: newTxt
+                                  echo "Sanitizado JUnit: ${f.path}"
+                                  totalChanged++
+                                }
+                              } catch (Throwable t) {
+                                echo "No se pudo sanear ${f.path}: ${t.message}"
+                              }
+                            }
+                          }
+                          echo "Archivos JUnit saneados: ${totalChanged}"
+                        }
+                        // ==========================================================
+
+                        // Publica JUnit ya saneado
+                        junit allowEmptyResults: true, testResults: '**/target/cucumber-reports/*.xml'
+
+                        stash name: "extent-archive-${branchName}",
+                                includes: "${extentOutDir}/extent.json",
+                                allowEmpty: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          echo "Ejecutando ${branches.size()} pods en paralelo..."
+          parallel branches
+        }
+      }
+    }
+
+    stage('Merge Final Report') {
+      steps {
+        container('playwright') {
+          dir('merge-extent') {
+            deleteDir()
+
+            checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${env.TARGET_BRANCH ?: ramaParam}"]],
+                    userRemoteConfigs: [[url: env.GIT_URL, credentialsId: env.GIT_CREDS]],
+                    extensions: [[$class: 'CleanCheckout']]
+            ])
+
+            unstash 'chunks'
+            script {
+              def chunks = parseJsonText(readFile('chunks.json'))
+              for (int i = 0; i < chunks.size(); i++) {
+                def branchName = "pod-${i + 1}"
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                  unstash "extent-archive-${branchName}"
+                }
+              }
+            }
+
+            sh '''
+              set -e
+              echo "[INFO] Extent archives found:"
+              find target -type f -name extent.json -print || true
+            '''
+
+            sh """
+              set -e
+              mvn -B -q -DskipTests test-compile
+
+              mvn -B -q -DskipTests exec:java \
+                -Dexec.classpathScope=test \
+                -Dexec.mainClass=com.mapfre.reporting.ExtentJsonMergeMain \
+                -Dextent.merge.input="${env.EXTENT_ARCHIVES_DIR}" \
+                -Dextent.merge.output="${env.EXTENT_MERGED_DIR}"
+            """
+
+            archiveArtifacts artifacts: "${env.EXTENT_MERGED_DIR}/**",
+                    onlyIfSuccessful: false,
+                    allowEmptyArchive: false
+
+            publishHTML(target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: "${env.EXTENT_MERGED_DIR}",
+                    reportFiles: "index.html",
+                    reportName: "Extent Report (Merged)",
+                    reportTitles: "Extent Report (Merged)"
+            ])
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo '--always--'
+      logstashSend failBuild: false, maxLines: 150000
+    }
+  }
+}
