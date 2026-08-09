@@ -5,4 +5,4 @@ Feature: Managing dialogs and popups
     When enter a name "<name>" in the dialog
     Examples:
       |name|
-      |luis|
+      |camelia|

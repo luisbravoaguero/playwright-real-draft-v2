@@ -36,7 +36,7 @@ public class BondaracademyPage extends BasePage {
             log.info(">>> LOCATOR HANDLER EXECUTED <<<");
             okButton.click();
         });
-        fillAndSync(enterNameInput, "camelia");
+        fillAndSync(enterNameInput, name);
         clickAndSync(submitButton);
     }
 }
