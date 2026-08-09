@@ -32,6 +32,7 @@ public class BondaracademyPage extends BasePage {
         clickAndSync(modalAndOverloadLink);
         clickAndSync(dialogLink);
         clickAndSync(enterNameButton);
+        // add this locator handler before the step that can trigger this locator handler
         page.addLocatorHandler(friendlyReminderLabel, locator -> {
             log.info(">>> LOCATOR HANDLER EXECUTED <<<");
             okButton.click();
