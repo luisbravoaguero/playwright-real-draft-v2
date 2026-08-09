@@ -30,13 +30,27 @@ public class RunnerCucumberTest extends AbstractTestNGCucumberTests {
     }*/
 
     @Override
-    @DataProvider(parallel = true)
+    @DataProvider(parallel = false)
     public Object[][] scenarios() {
-        return super.scenarios();
 
-        //Object[][] s = super.scenarios();
-        //System.out.println("[DEBUG] Escenarios descubiertos por DataProvider = " + (s == null ? 0 : s.length));
-        //return s;
+        Object[][] originalScenarios = super.scenarios();
+
+        int repeatEach = Integer.parseInt(
+                System.getProperty("repeat.each", "1")
+        );
+
+        Object[][] repeatedScenarios =
+                new Object[originalScenarios.length * repeatEach][];
+
+        int index = 0;
+
+        for (Object[] scenario : originalScenarios) {
+            for (int i = 0; i < repeatEach; i++) {
+                repeatedScenarios[index++] = scenario.clone();
+            }
+        }
+
+        return repeatedScenarios;
     }
 
 }
