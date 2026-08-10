@@ -1,0 +1,42 @@
+- generic [ref=f1e2]:
+  - navigation [ref=f1e4]:
+    - generic:
+      - link "conduit" [ref=f1e5] [cursor=pointer]:
+        - /url: /
+      - list [ref=f1e6]:
+        - listitem [ref=f1e7]:
+          - link "Home" [ref=f1e8] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=f1e9]:
+          - link "Sign in" [ref=f1e10] [cursor=pointer]:
+            - /url: /login
+        - listitem [ref=f1e11]:
+          - link "Sign up" [ref=f1e12] [cursor=pointer]:
+            - /url: /register
+  - generic [ref=f1e14]:
+    - generic [ref=f1e16]:
+      - heading "conduit" [level=1] [ref=f1e17]
+      - paragraph [ref=f1e18]: A place to learn and practice test automation.
+      - paragraph [ref=f1e19]:
+        - link "https://bondaracademy.com" [ref=f1e20] [cursor=pointer]:
+          - /url: https://bondaracademy.com?utm_source=conduitapp&utm_medium=subdomain&utm_campaign=subdomain_traffic
+    - generic [ref=f1e23]:
+      - list [ref=f1e25]:
+        - listitem [ref=f1e26]:
+          - generic [ref=f1e27] [cursor=pointer]: Your Feed
+        - listitem [ref=f1e28]:
+          - generic [ref=f1e29]: Global Feed
+        - text: 
+      - generic [ref=f1e30]: Loading articles...
+  - contentinfo [ref=f1e32]:
+    - generic [ref=f1e33]:
+      - link "conduit" [ref=f1e34] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f1e35]:
+        - text: © 2026. An interactive learning project from
+        - link "RealWorld OSS Project" [ref=f1e36] [cursor=pointer]:
+          - /url: https://github.com/gothinkster/realworld
+        - text: . Code licensed under MIT. Hosted by
+        - link "Bondar Academy" [ref=f1e37] [cursor=pointer]:
+          - /url: https://bondaracademy.com
+        - text: .

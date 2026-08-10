@@ -29,15 +29,22 @@ public class BondaracademyPage extends BasePage {
     }
 
     public void fillName(String name) {
-        clickAndSync(modalAndOverloadLink);
-        clickAndSync(dialogLink);
-        clickAndSync(enterNameButton);
-        // add this locator handler before the step that can trigger this locator handler
-        page.addLocatorHandler(friendlyReminderLabel, locator -> {
-            log.info(">>> LOCATOR HANDLER EXECUTED <<<");
-            okButton.click();
-        });
-        fillAndSync(enterNameInput, name);
-        clickAndSync(submitButton);
+        page.waitForResponse(
+            response -> response.url().contains("https://www.bondaracademy.com/") && response.status() == 200,
+            () -> {
+                clickAndSync(modalAndOverloadLink);
+                clickAndSync(dialogLink);
+                clickAndSync(enterNameButton);
+                // add this locator handler before the step that can trigger this locator handler
+                page.addLocatorHandler(friendlyReminderLabel, locator -> {
+                    log.info(">>> LOCATOR HANDLER EXECUTED <<<");
+                    okButton.click();
+                });
+                fillAndSync(enterNameInput, name);
+                clickAndSync(submitButton);
+            }
+        );
     }
+
+
 }
