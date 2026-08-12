@@ -64,6 +64,14 @@ public final class ConfigManager {
         return Boolean.parseBoolean(get(DRIVER_PROPS, "maximize", "true"));
     }
 
+    public static boolean isTracingEnabled() {
+        return Boolean.parseBoolean(get(DRIVER_PROPS, "trace.enabled", "false"));
+    }
+
+    public static boolean isTraceRetainOnFailureOnly() {
+        return Boolean.parseBoolean(get(DRIVER_PROPS, "trace.retainOnFailureOnly", "true"));
+    }
+
     public static double getDefaultTimeoutMs() {
         String v = get(DRIVER_PROPS, "pageLoadTimeout", "40000");
         try {

@@ -103,10 +103,12 @@ Generate code that is consistent with the existing architecture and conventions 
 
 ## Assertions
 
-- Add assertions only when they verify meaningful expected behavior.
-- Prefer assertions that clearly communicate the expected business or UI state.
+- Every automated scenario must validate a meaningful expected business outcome.
+- Do not consider a scenario complete only because all UI interactions were executed successfully.
+- Before implementing a scenario, identify the expected result or acceptance criterion.
+- If the expected outcome cannot be determined from the feature, existing tests, application behavior, or user request, ask for clarification instead of inventing an assertion.
+- Prefer assertions on stable business-visible outcomes rather than incidental implementation details.
 - Do not add arbitrary assertions solely to increase the number of validations.
-- Keep UI interaction responsibilities and validation responsibilities clearly separated when practical.
 
 ## Maven and Project Configuration
 

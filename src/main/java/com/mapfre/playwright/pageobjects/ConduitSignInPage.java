@@ -15,7 +15,7 @@ public class ConduitSignInPage extends BasePage {
     public ConduitSignInPage(Page page) {
         super(page);
         this.signInHeading = page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Sign in"));
-        this.emailInput = page.getByPlaceholder("Email");
+        this.emailInput = page.getByPlaceholder("cophenage");//Email
         this.passwordInput = page.getByPlaceholder("Password");
         this.signInButton = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Sign in"));
     }

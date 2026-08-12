@@ -2,12 +2,15 @@ package com.mapfre.test.hooks;
 
 import com.mapfre.playwright.driver.DriverFactory;
 import com.mapfre.playwright.driver.DriverManager;
+import com.mapfre.playwright.tracing.TraceManager;
 import com.mapfre.reporting.ArtifactSinks;
 import com.mapfre.reporting.ExtentReportManager;
 import com.mapfre.reporting.ReportLogger;
 import com.mapfre.test.reporting.CucumberExtentArtifactSink;
 import io.cucumber.java.*;
 import io.cucumber.java.Scenario;
+
+import java.nio.file.Path;
 
 public class Hooks {
 
@@ -24,6 +27,8 @@ public class Hooks {
 
         // Driver
         DriverFactory.init();
+        // Playwright trace
+        TraceManager.start(scenario.getName());
 
         // Ensure Extent test exists for this thread (plugin may have created it already)
         try {
@@ -60,6 +65,14 @@ public class Hooks {
                 ReportLogger.fail("Scenario failed: " + scenario.getName());
             } else {
                 ReportLogger.pass("Scenario passed: " + scenario.getName());
+            }
+            try {
+                Path tracePath = TraceManager.stop(scenario.getName(), scenario.isFailed());
+                if (tracePath != null) {
+                    ReportLogger.info("Playwright trace guardado en: " + tracePath.toAbsolutePath());
+                }
+            } catch (Exception e) {
+                ReportLogger.fail("No se pudo guardar Playwright trace: " + e.getMessage());
             }
         } finally {
             DriverManager.cleanup();
