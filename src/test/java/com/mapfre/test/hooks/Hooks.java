@@ -12,9 +12,11 @@ import io.cucumber.java.Scenario;
 public class Hooks {
 
     private final ScenarioContext scenarioContext;
+    private final ScenarioTabs scenarioTabs;
 
-    public Hooks(ScenarioContext scenarioContext) {
+    public Hooks(ScenarioContext scenarioContext, ScenarioTabs scenarioTabs) {
         this.scenarioContext = scenarioContext;
+        this.scenarioTabs = scenarioTabs;
     }
 
     @Before
@@ -62,9 +64,14 @@ public class Hooks {
                 ReportLogger.pass("Scenario passed: " + scenario.getName());
             }
         } finally {
-            DriverManager.cleanup();
-            ArtifactSinks.clear();
-            ExtentReportManager.clearTest();
+            try {
+                // Close scenario-owned popups before the context and the Playwright runtime.
+                scenarioTabs.close();
+            } finally {
+                DriverManager.cleanup();
+                ArtifactSinks.clear();
+                ExtentReportManager.clearTest();
+            }
         }
     }
 }
