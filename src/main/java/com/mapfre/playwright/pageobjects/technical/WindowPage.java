@@ -64,10 +64,8 @@ public final class WindowPage extends BasePage {
     }
 
     public void openContainerToGetNewTabButton() {
-        clickAndSync(modalOverLayLink);
-        clickAndSync(windowSubLink);
-        waitForNetworkIdle();
-        waitForDOMContentLoaded();
+        modalOverLayLink.click();
+        windowSubLink.click();
         waitRandomBetween(1000);
     }
 }
