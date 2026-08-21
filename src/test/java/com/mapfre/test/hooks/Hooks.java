@@ -2,6 +2,7 @@ package com.mapfre.test.hooks;
 
 import com.mapfre.playwright.driver.DriverFactory;
 import com.mapfre.playwright.driver.DriverManager;
+import com.mapfre.playwright.tabs.ScenarioTabs;
 import com.mapfre.reporting.ArtifactSinks;
 import com.mapfre.reporting.ExtentReportManager;
 import com.mapfre.reporting.ReportLogger;
