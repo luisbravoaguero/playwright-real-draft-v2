@@ -207,23 +207,25 @@ que componentes almacenen estado static o sean singleton entre escenarios.
 ### 5. Coordinador de tabs con alcance de escenario
 
 Un objeto inyectado por PicoContainer puede administrar varias pestañas de un flujo no lineal. Debe
-ser por escenario y usar el contexto ya creado por `DriverFactory`, nunca crear lifecycle propio.
+ser por escenario y debe recibir el contexto ya creado, nunca crear lifecycle propio.
 
 ```java
 public final class ScenarioTabs implements AutoCloseable {
-  private final Map<String, Page> owned = new LinkedHashMap<>();
+  private final BrowserContext context;
+  private final List<Page> owned = new ArrayList<>();
 
-  public Page open(String name, Page source, Runnable action) {
-    if (source.context() != DriverManager.context()) {
-      throw new IllegalArgumentException("Contexto de otro escenario");
-    }
-    Page popup = source.waitForPopup(action);
-    owned.put(name, popup);
+  public ScenarioTabs(PageProvider pages) {
+    this.context = pages.get().context();
+  }
+
+  public Page capture(Runnable action) {
+    Page popup = context.waitForPage(action);
+    owned.add(popup);
     return popup;
   }
 
   @Override public void close() {
-    for (Page popup : List.copyOf(owned.values())) {
+    for (Page popup : List.copyOf(owned)) {
       if (!popup.isClosed()) popup.close();
     }
     owned.clear();
@@ -434,11 +436,10 @@ Para cada ejecución conservar:
 - assertion de unicidad: ningún scenario id aparece en artifacts o URLs de otro escenario;
 - reporte de cleanup sin tabs pendientes y sin errores tipo "Target/Page/Context has been closed".
 
-La prueba técnica incluida reutiliza `testng.xml`, `RunnerCucumberTest`, los hooks y el lifecycle
-normal del proyecto. Seleccionarla por tag evita introducir una segunda suite TestNG:
+Comando de campaña sugerido (ajustando tags a una feature técnica dedicada):
 
 ```bash
-mvn test -Ddp.threads=4 -Dcucumber.filter.tags="@popup"
+mvn test -Ddp.threads=4 -Dcucumber.filter.tags=@multitab-isolation
 ```
 
 La prueba sólo es concluyente si solapa escenarios de forma real y repite lo suficiente para hacer
