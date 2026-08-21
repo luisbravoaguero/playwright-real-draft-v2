@@ -2,50 +2,48 @@ package com.mapfre.test.stepdefinitions.technical;
 
 import com.mapfre.playwright.tabs.ScenarioTabs;
 import com.mapfre.test.hooks.PageProvider;
-import com.mapfre.test.pageobjects.technical.PopupDetailPage;
-import com.mapfre.test.pageobjects.technical.PopupResultsPage;
+import com.mapfre.test.pageobjects.technical.PlaygroundHomePage;
+import com.mapfre.test.pageobjects.technical.WindowPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.testng.Assert;
 
 public final class PopupLifecycleSteps {
-    private final PopupResultsPage resultsPage;
-    private PopupDetailPage detailPage;
-    private String scenarioId;
+    private final WindowPage windowPage;
+    private PlaygroundHomePage homepage;
 
     public PopupLifecycleSteps(PageProvider pageProvider, ScenarioTabs tabs) {
-        resultsPage = new PopupResultsPage(pageProvider.get(), tabs);
+        windowPage = new WindowPage(pageProvider.get(), tabs);
     }
 
-    @Given("una página de resultados aislada para el escenario {string}")
-    public void loadScenarioResults(String id) {
-        scenarioId = id;
-        resultsPage.loadFixture(id);
+    @Given("el escenario {string} está en la página Window de Bondar Academy")
+    public void openBondarWindowPage(String scenarioId) {
+        windowPage.open();
     }
 
-    @When("abre el detalle en una nueva pestaña")
-    public void openDetailInNewTab() {
-        detailPage = resultsPage.openDetail(scenarioId);
+    @When("hace clic en Open homepage in a new tab")
+    public void openHomepageInNewTab() {
+        homepage = windowPage.openHomepageInNewTab();
     }
 
-    @Then("el detalle pertenece únicamente al escenario actual")
-    public void assertScenarioDetail() {
-        detailPage.assertLoadedFor(scenarioId);
-        Assert.assertEquals(resultsPage.openPopupCount(), 1, "Debe existir un popup registrado");
-        Assert.assertEquals(resultsPage.contextPageCount(), 2, "El contexto debe contener dos páginas");
+    @Then("el homepage se abre en una nueva pestaña del mismo escenario")
+    public void assertHomepagePopup() {
+        homepage.assertLoaded();
+        Assert.assertEquals(windowPage.ownedPopupCount(), 1, "Debe existir un popup registrado");
+        Assert.assertEquals(windowPage.contextPageCount(), 2, "El contexto debe contener dos páginas");
     }
 
-    @When("cierra la pestaña de detalle")
-    public void closeDetailTab() {
-        resultsPage.closeDetail();
+    @When("cierra la nueva pestaña")
+    public void closeHomepageTab() {
+        windowPage.closeHomepage();
     }
 
-    @Then("regresa a la pestaña original sin contaminación")
-    public void assertOriginalTabIsIsolated() {
-        Assert.assertTrue(detailPage.isClosed(), "El popup debe estar cerrado");
-        resultsPage.assertOriginalRemainsOpenFor(scenarioId);
-        Assert.assertEquals(resultsPage.openPopupCount(), 0, "No deben quedar popups registrados");
-        Assert.assertEquals(resultsPage.contextPageCount(), 1, "Sólo debe permanecer la página original");
+    @Then("la pestaña Window original permanece abierta y aislada")
+    public void assertOriginalWindowTab() {
+        Assert.assertTrue(homepage.isClosed(), "La nueva pestaña debe estar cerrada");
+        windowPage.assertStillOpen();
+        Assert.assertEquals(windowPage.ownedPopupCount(), 0, "No deben quedar popups registrados");
+        Assert.assertEquals(windowPage.contextPageCount(), 1, "Sólo debe permanecer la pestaña original");
     }
 }

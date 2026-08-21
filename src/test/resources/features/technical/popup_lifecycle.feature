@@ -1,15 +1,15 @@
-@technical @multitab-isolation
-Feature: Aislamiento de nuevas pestañas por escenario
+@popup @multitab-isolation
+Feature: Abrir el homepage de Bondar Academy en una pestaña nueva
   Como equipo de automatización
-  quiero capturar y cerrar cada pestaña dentro de su escenario
-  para evitar contaminación durante la ejecución paralela
+  quiero capturar la pestaña abierta desde la página Window
+  para validar su contenido y cerrarla sin contaminar otros escenarios
 
-  Scenario Outline: El detalle conserva el contexto del escenario que lo abrió
-    Given una página de resultados aislada para el escenario "<scenarioId>"
-    When abre el detalle en una nueva pestaña
-    Then el detalle pertenece únicamente al escenario actual
-    When cierra la pestaña de detalle
-    Then regresa a la pestaña original sin contaminación
+  Scenario Outline: El homepage se abre y se cierra dentro de su BrowserContext
+    Given el escenario "<scenarioId>" está en la página Window de Bondar Academy
+    When hace clic en Open homepage in a new tab
+    Then el homepage se abre en una nueva pestaña del mismo escenario
+    When cierra la nueva pestaña
+    Then la pestaña Window original permanece abierta y aislada
 
     Examples:
       | scenarioId |

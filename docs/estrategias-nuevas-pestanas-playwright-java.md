@@ -434,10 +434,11 @@ Para cada ejecución conservar:
 - assertion de unicidad: ningún scenario id aparece en artifacts o URLs de otro escenario;
 - reporte de cleanup sin tabs pendientes y sin errores tipo "Target/Page/Context has been closed".
 
-Comando de campaña sugerido (ajustando tags a una feature técnica dedicada):
+La prueba técnica incluida reutiliza `testng.xml`, `RunnerCucumberTest`, los hooks y el lifecycle
+normal del proyecto. Seleccionarla por tag evita introducir una segunda suite TestNG:
 
 ```bash
-mvn test -Ddp.threads=4 -Dcucumber.filter.tags=@multitab-isolation
+mvn test -Ddp.threads=4 -Dcucumber.filter.tags="@popup"
 ```
 
 La prueba sólo es concluyente si solapa escenarios de forma real y repite lo suficiente para hacer
