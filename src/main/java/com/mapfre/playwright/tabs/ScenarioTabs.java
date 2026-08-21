@@ -1,5 +1,6 @@
-package com.mapfre.test.hooks;
+package com.mapfre.playwright.tabs;
 
+import com.mapfre.playwright.driver.DriverManager;
 import com.microsoft.playwright.Page;
 
 import java.util.ArrayList;
@@ -14,12 +15,10 @@ import java.util.Objects;
  * infrastructure and must only be called by the TestNG worker thread that owns the scenario.</p>
  */
 public final class ScenarioTabs implements AutoCloseable {
-    private final PageProvider pageProvider;
     private final Map<String, Page> popups = new LinkedHashMap<>();
     private Thread ownerThread;
 
-    public ScenarioTabs(PageProvider pageProvider) {
-        this.pageProvider = Objects.requireNonNull(pageProvider, "pageProvider must not be null");
+    public ScenarioTabs() {
     }
 
     /** Atomically captures and owns the popup produced by {@code trigger}. */
@@ -32,7 +31,7 @@ public final class ScenarioTabs implements AutoCloseable {
         if (popups.containsKey(tabName)) {
             throw new IllegalStateException("A popup named '" + tabName + "' is already open");
         }
-        if (source.context() != pageProvider.get().context()) {
+        if (source.context() != DriverManager.context()) {
             throw new IllegalArgumentException("The popup source belongs to another scenario context");
         }
 

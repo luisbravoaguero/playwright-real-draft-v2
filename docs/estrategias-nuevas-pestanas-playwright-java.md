@@ -207,25 +207,23 @@ que componentes almacenen estado static o sean singleton entre escenarios.
 ### 5. Coordinador de tabs con alcance de escenario
 
 Un objeto inyectado por PicoContainer puede administrar varias pestañas de un flujo no lineal. Debe
-ser por escenario y debe recibir el contexto ya creado, nunca crear lifecycle propio.
+ser por escenario y usar el contexto ya creado por `DriverFactory`, nunca crear lifecycle propio.
 
 ```java
 public final class ScenarioTabs implements AutoCloseable {
-  private final BrowserContext context;
-  private final List<Page> owned = new ArrayList<>();
+  private final Map<String, Page> owned = new LinkedHashMap<>();
 
-  public ScenarioTabs(PageProvider pages) {
-    this.context = pages.get().context();
-  }
-
-  public Page capture(Runnable action) {
-    Page popup = context.waitForPage(action);
-    owned.add(popup);
+  public Page open(String name, Page source, Runnable action) {
+    if (source.context() != DriverManager.context()) {
+      throw new IllegalArgumentException("Contexto de otro escenario");
+    }
+    Page popup = source.waitForPopup(action);
+    owned.put(name, popup);
     return popup;
   }
 
   @Override public void close() {
-    for (Page popup : List.copyOf(owned)) {
+    for (Page popup : List.copyOf(owned.values())) {
       if (!popup.isClosed()) popup.close();
     }
     owned.clear();

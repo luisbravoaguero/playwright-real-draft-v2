@@ -2,6 +2,7 @@ package com.mapfre.test.hooks;
 
 import com.mapfre.playwright.driver.DriverFactory;
 import com.mapfre.playwright.driver.DriverManager;
+import com.mapfre.playwright.tabs.ScenarioTabs;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -36,7 +37,7 @@ public final class ScenarioTabsTest {
                   </body>
                 </html>
                 """);
-        tabs = new ScenarioTabs(new PageProvider());
+        tabs = new ScenarioTabs();
     }
 
     @AfterMethod(alwaysRun = true)
