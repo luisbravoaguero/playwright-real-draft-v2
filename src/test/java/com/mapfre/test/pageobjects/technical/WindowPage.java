@@ -9,29 +9,39 @@ import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
 
 public final class WindowPage extends BasePage {
-    public static final String URL = "https://playground.bondaracademy.com/pages/modal-overlays/window";
-    private static final String HOMEPAGE_TAB = "bondar-homepage";
+    public static final String URL = "https://playground.bondaracademy.com/";
+    private static final String HOMEPAGE_TAB = "pages/iot-dashboard";
 
     private final ScenarioTabs tabs;
     private final Locator openHomepage;
+    private final Locator modalOverLayLink;
+    private final Locator windowSubLink;
 
     public WindowPage(Page page, ScenarioTabs tabs) {
         super(page);
         this.tabs = tabs;
         openHomepage = page.getByRole(
                 AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Open homepage in a new tab").setExact(true));
+                new Page.GetByRoleOptions().setName("OPEN HOMEPAGE IN A NEW TAB"));
+        this.modalOverLayLink = page.getByRole(
+                AriaRole.LINK,
+                new Page.GetByRoleOptions().setName("Modal & Overlays"));
+        this.windowSubLink = page.getByRole(
+                AriaRole.LINK,
+                new Page.GetByRoleOptions().setName("Window"));
     }
 
     public void open() {
         page.navigate(URL);
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
         ElementAsserts.assertVisible(
-                openHomepage,
-                "El botón para abrir el homepage en una pestaña nueva debe estar visible");
+                modalOverLayLink,
+                "El link para abrir el menu Modal & OverLays en una pestaña nueva debe estar visible");
     }
 
     public PlaygroundHomePage openHomepageInNewTab() {
+        clickAndSync(modalOverLayLink);
+        clickAndSync(windowSubLink);
         Page popup = tabs.open(HOMEPAGE_TAB, page, openHomepage::click);
         return new PlaygroundHomePage(popup);
     }

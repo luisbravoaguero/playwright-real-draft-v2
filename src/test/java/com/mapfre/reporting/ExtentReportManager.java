@@ -35,7 +35,7 @@ public final class ExtentReportManager {
             extent.attachReporter(json);
 
             // 2) (Opcional) HTML por pod solo si se habilita (por defecto NO)
-            boolean sparkEnabled = Boolean.parseBoolean(System.getProperty("extent.spark.enabled", "false"));
+            boolean sparkEnabled = Boolean.parseBoolean(System.getProperty("extent.spark.enabled", "true"));
             if (sparkEnabled) {
                 ExtentSparkReporter spark = new ExtentSparkReporter(dir.resolve("index.html").toString());
                 spark.config().setTheme(Theme.STANDARD);
