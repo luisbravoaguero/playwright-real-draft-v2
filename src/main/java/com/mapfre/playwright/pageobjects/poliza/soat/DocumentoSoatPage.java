@@ -2,6 +2,7 @@ package com.mapfre.playwright.pageobjects.poliza.soat;
 
 import com.mapfre.exceptions.FrameworkException;
 import com.mapfre.utils.DownloadVsErrorRace;
+import com.mapfre.utils.PdfContentValidator;
 import com.mapfre.asserts.ElementAsserts;
 import com.mapfre.playwright.pageobjects.BasePage;
 import com.mapfre.utils.waits.FirstAppearanceRace;
@@ -124,7 +125,9 @@ public class DocumentoSoatPage extends BasePage {
             throw new FrameworkException("Ni el error modal ni la finalización de la descarga ocurrieron dentro del tiempo de espera.");
         }
 
-        // DOWNLOAD_SUCCESS -> continue
+        if (r.outcome() == DownloadVsErrorRace.Outcome.DOWNLOAD_SUCCESS) {
+            PdfContentValidator.validatePdfIsReadable(r.download());
+        }
     }
 
 /*

@@ -30,6 +30,7 @@ public final class DownloadVsErrorRace {
             String url,
             String downloadFailure,
             Path tempPath,
+            Download download,
             long elapsedMs
     ) {}
 
@@ -83,6 +84,7 @@ public final class DownloadVsErrorRace {
                                 Outcome.ERROR_UI_FIRST,
                                 safeText(errorDescription),
                                 null, null, null, null,
+                                null,
                                 elapsedMs(startNanos)
                         );
                     }
@@ -103,6 +105,8 @@ public final class DownloadVsErrorRace {
                     String filename = safe(() -> d.suggestedFilename());
                     String url = safe(() -> d.url());
 
+                    Download completedDownload = downloadRef.get();
+
                     if (c.failure != null && !c.failure.isBlank()) {
                         return new Result(
                                 Outcome.DOWNLOAD_FAILED,
@@ -111,6 +115,7 @@ public final class DownloadVsErrorRace {
                                 url,
                                 c.failure,
                                 c.tempPath,
+                                completedDownload,
                                 elapsedMs(startNanos)
                         );
                     }
@@ -122,6 +127,7 @@ public final class DownloadVsErrorRace {
                             url,
                             null,
                             c.tempPath,
+                            completedDownload,
                             elapsedMs(startNanos)
                     );
                 }
@@ -129,7 +135,7 @@ public final class DownloadVsErrorRace {
                 page.waitForTimeout(Math.max(50, pollMs));
             }
 
-            return new Result(Outcome.TIMEOUT, null, null, null, null, null, elapsedMs(startNanos));
+            return new Result(Outcome.TIMEOUT, null, null, null, null, null, null, elapsedMs(startNanos));
 
         } finally {
             // Some Playwright Java versions support offDownload, some might not.
