@@ -1,6 +1,7 @@
-package com.mapfre.test.pageobjects.technical;
+package com.mapfre.playwright.pageobjects.technical;
 
 import com.mapfre.asserts.ElementAsserts;
+import com.mapfre.config.PlaygroundConfig;
 import com.mapfre.exceptions.FrameworkException;
 import com.mapfre.playwright.pageobjects.BasePage;
 import com.microsoft.playwright.Locator;
@@ -29,14 +30,19 @@ public final class PlaygroundHomePage extends BasePage {
 
         URI destination = URI.create(page.url());
         String host = destination.getHost();
-        if (!"playground.bondaracademy.com".equals(host) && !"www.playground.bondaracademy.com".equals(host)) {
+        String expectedHost = PlaygroundConfig.getPlaygroundHost();
+        
+        if (!expectedHost.equals(host)) {
             throw new FrameworkException(
-                    "El popup abrió un host inesperado: " + page.url());
+                    "El popup abrió un host inesperado. Esperado: " + expectedHost + ", Actual: " + host + 
+                    ". URL completa: " + page.url());
         }
+        
         String path = destination.getPath();
         if (!"/pages/iot-dashboard".equals(path)) {
             throw new FrameworkException(
-                    "El popup no abrió el homepage esperado: " + page.url());
+                    "El popup no abrió el homepage esperado. Esperado path: /pages/iot-dashboard, Actual: " + path +
+                    ". URL completa: " + page.url());
         }
     }
 

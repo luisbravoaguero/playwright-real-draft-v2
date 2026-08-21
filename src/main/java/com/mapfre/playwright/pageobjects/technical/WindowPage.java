@@ -1,6 +1,7 @@
-package com.mapfre.test.pageobjects.technical;
+package com.mapfre.playwright.pageobjects.technical;
 
 import com.mapfre.asserts.ElementAsserts;
+import com.mapfre.config.PlaygroundConfig;
 import com.mapfre.playwright.pageobjects.BasePage;
 import com.mapfre.playwright.tabs.ScenarioTabs;
 import com.microsoft.playwright.Locator;
@@ -9,7 +10,6 @@ import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
 
 public final class WindowPage extends BasePage {
-    public static final String URL = "https://playground.bondaracademy.com/";
     private static final String HOMEPAGE_TAB = "pages/iot-dashboard";
 
     private final ScenarioTabs tabs;
@@ -32,7 +32,7 @@ public final class WindowPage extends BasePage {
     }
 
     public void open() {
-        page.navigate(URL);
+        page.navigate(PlaygroundConfig.getPlaygroundUrl());
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
         ElementAsserts.assertVisible(
                 modalOverLayLink,
@@ -40,8 +40,7 @@ public final class WindowPage extends BasePage {
     }
 
     public PlaygroundHomePage openHomepageInNewTab() {
-        clickAndSync(modalOverLayLink);
-        clickAndSync(windowSubLink);
+        openContainerToGetNewTabButton();
         Page popup = tabs.open(HOMEPAGE_TAB, page, openHomepage::click);
         return new PlaygroundHomePage(popup);
     }
@@ -62,5 +61,13 @@ public final class WindowPage extends BasePage {
 
     public int ownedPopupCount() {
         return tabs.openCount();
+    }
+
+    public void openContainerToGetNewTabButton() {
+        clickAndSync(modalOverLayLink);
+        clickAndSync(windowSubLink);
+        waitForNetworkIdle();
+        waitForDOMContentLoaded();
+        waitRandomBetween(1000);
     }
 }

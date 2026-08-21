@@ -4,8 +4,8 @@ import com.aventstack.extentreports.ExtentReports;
 import com.mapfre.playwright.tabs.ScenarioTabs;
 import com.mapfre.reporting.ExtentEvidence;
 import com.mapfre.test.hooks.PageProvider;
-import com.mapfre.test.pageobjects.technical.PlaygroundHomePage;
-import com.mapfre.test.pageobjects.technical.WindowPage;
+import com.mapfre.playwright.pageobjects.technical.PlaygroundHomePage;
+import com.mapfre.playwright.pageobjects.technical.WindowPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -28,6 +28,8 @@ public final class PopupLifecycleSteps {
 
     @When("hace clic en Open homepage in a new tab")
     public void openHomepageInNewTab() {
+        windowPage.openContainerToGetNewTabButton();
+        ExtentEvidence.shot("Botón para abrir homepage en nueva pestaña");
         homepage = windowPage.openHomepageInNewTab();
     }
 
